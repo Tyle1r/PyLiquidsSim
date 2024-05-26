@@ -1,0 +1,15 @@
+Astar = 1; % Throat area [m^2]
+Ae = 3; % Exit area [m^2]
+gam = 1.4; % Specific heat ratio
+R = 287; % Gas constant of air
+verbose = 1; % Print messages
+Patm = 1.01e5; % Atmospheric pressure [Pa]
+To = 300; % Stagnation temperature [K]
+Po1 = 1.01*Patm;
+Po2 = 2*Patm;
+Po3 = 2.7*Patm;
+Po4 = 22*Patm;
+[mdot1,thrust1,Pexit1] = CvgDvg(Po1,Patm,To,Astar,Ae,gam,R,verbose)
+[mdot2,thrust2,Pexit2] = CvgDvg(Po2,Patm,To,Astar,Ae,gam,R,verbose)
+[mdot3,thrust3,Pexit3] = CvgDvg(Po3,Patm,To,Astar,Ae,gam,R,verbose)
+[mdot4,thrust4,Pexit4] = CvgDvg(Po4,Patm,To,Astar,Ae,gam,R,verbose)

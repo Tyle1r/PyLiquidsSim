@@ -1,5 +1,5 @@
 # All functions are adapted from MATLAB functions written by Dr.Brian Helenbrook
-
+import pandas as pd
 import numpy as np
 from scipy.special import cot
 def isentropic(M, gam):
@@ -408,8 +408,43 @@ def shock(M1,gam):
     shock_ratios['V_Vstar'] = M2/M1*(shock_ratios['T2_T1)'])^((gam+1)/(2*(gam-1)));
     return shock_ratios
     
+def StandardConditions(alt):
+    '''
+    Reads data listed in Table 2.9 of book  and interpolates at altitude
+    altitude should be in meters.
 
+    Args:
 
+    alt (float): Altitude [m]
+    
+    Returns:
+    T (float): Atmospheric Temperature (K)
+    P (float): Atmospheric Pressure (Pa)
+    rho (float): Atmospheric Density (kg/m^3)
+    '''
+    # MATLAB SCRIPT
+    '''
+    persistent std_data;
+    if isempty(std_data)
+        [std_data] = csvread('std.csv');
+        std_data(:,3) = log(std_data(:,3));
+        std_data(:,4) = log(std_data(:,4));
+    end
+    '''
+    if not hasattr(StandardConditions, "std_data"):
+        std_data = pd.read_csv('std.csv').to_numpy()
+        std_data[:, 2] = np.log(std_data[:, 2])
+        std_data[:, 3] = np.log(std_data[:, 3])
+        StandardConditions.std_data = std_data
+    
+    std_data = StandardConditions.std_data
+    data = np.empty((1, 3))
+    data[0, :] = np.interp(alt, std_data[:, 0], std_data[:, 1:], axis=0)
+    T = data[0, 0]
+    P = 1.0133e5 * np.exp(data[0, 1])
+    rho = np.exp(data[0, 2])
+
+    return T, P, rho
 
 
 
