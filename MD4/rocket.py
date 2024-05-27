@@ -1,6 +1,6 @@
 import numpy as np
 
-def rocket_rhs(t, y, P0, Agrain, rhof, Tf, Rb, gamb, Astar, Ae, a, n, mr, g, v, Cd, Ar):
+def rocket(t, y, P0, Agrain, rhof, Tf, Rb, gamb, Astar, Ae, a, n, mr, g, v, Cd, Ar):
     x = y[0]
     v = y[1]
     mp = y[2]

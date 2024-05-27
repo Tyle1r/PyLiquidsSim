@@ -1,7 +1,7 @@
 # All functions are adapted from MATLAB functions written by Dr.Brian Helenbrook
 import pandas as pd
 import numpy as np
-from scipy.special import cot
+import os
 def isentropic(M, gam):
     """
     Calculate isentropic flow property ratios for given Mach numbers and specific heat ratio.
@@ -183,7 +183,8 @@ def MforAratio(Aratio,gam):
             break
         if m < 1 or m > 1E3:
             # No good
-            m = np.random(1)*999+1
+            m = np.random.randint(1, 1000)
+
     if iter>99:
         print('trouble converging for supersonic root with Aratio ' +str(Aratio))
         M_super = np.NaN
@@ -245,7 +246,7 @@ def obliqueDeltaforTheta(m1,theta,gamma):
     Returns:
     delta (float): Turn angle
     '''
-    tanDelta = (2*cot(theta)*(m1**2*np.sin(theta)**2-1))/(m1**2*(gamma+np.cos(2*theta))+2)
+    tanDelta = (2*(np.tan(theta))**(-1)*(m1**2*np.sin(theta)**2-1))/(m1**2*(gamma+np.cos(2*theta))+2)
     delta = np.arctan(tanDelta)
     return delta
 
@@ -269,9 +270,9 @@ def obliqueThetasforDelta(m1,delta,gamma):
     # Newton Iteration to solve equation for weak shock
     theta = np.sin(1/m1)
     for iter in range(1,101):
-        Eq = (2*cot(theta)*(m1**2*np.sin(theta)**2-1))/(m1**2*(gamma*np.cos(2*theta))+2)
+        Eq = (2*(np.tan(theta))**(-1)*(m1**2*np.sin(theta)**2-1))/(m1**2*(gamma*np.cos(2*theta))+2)
         Err = Eq -tandelta
-        dErrdTheta = (4*m1**2*np.sin(2*theta)*cot(theta)*(m1**2*np.sin(theta)**2 - 1))/((np.cos(2*theta) + gamma)*m1**2 + 2)**2 - (2*(cot(theta)**2 + 1)*(m1**2*np.sin(theta)**2 - 1))/((np.cos(2*theta) + gamma)*m1**2 + 2) + (4*m1**2*np.cos(theta)*cot(theta)*np.sin(theta))/((np.cos(2*theta) + gamma)*m1**2 + 2)
+        dErrdTheta = (4*m1**2*np.sin(2*theta)*(np.tan(theta))**(-1)*(m1**2*np.sin(theta)**2 - 1))/((np.cos(2*theta) + gamma)*m1**2 + 2)**2 - (2*((np.tan(theta)**(-1))**2 + 1)*(m1**2*np.sin(theta)**2 - 1))/((np.cos(2*theta) + gamma)*m1**2 + 2) + (4*m1**2*np.cos(theta)*(np.tan(theta)**(-1))*np.sin(theta))/((np.cos(2*theta) + gamma)*m1**2 + 2)
         theta = theta - Err/dErrdTheta
         theta = np.abs(theta)
         if (np.abs(Err) < 1.0e-5):
@@ -285,9 +286,9 @@ def obliqueThetasforDelta(m1,delta,gamma):
     # Newton Iteration to solve equation for strong shock
     theta = np.pi/2
     for iter in range(1,101):
-        Eq = (2*cot(theta)*(m1**2*np.sin(theta)**2-1))/(m1**2*(gamma+np.cos(2*theta))+2)
+        Eq = (2*(np.tan(theta)**(-1))*(m1**2*np.sin(theta)**2-1))/(m1**2*(gamma+np.cos(2*theta))+2)
         Err = Eq -tandelta
-        dErrdTheta = (4*m1**2*np.sin(2*theta)*cot(theta)*(m1**2*np.sin(theta)**2 - 1))/((np.cos(2*theta) + gamma)*m1**2 + 2)**2 - (2*(cot(theta)**2 + 1)*(m1**2*np.sin(theta)**2 - 1))/((np.cos(2*theta) + gamma)*m1**2 + 2) + (4*m1**2*np.cos(theta)*cot(theta)*np.sin(theta))/((np.cos(2*theta) + gamma)*m1**2 + 2)
+        dErrdTheta = (4*m1**2*np.sin(2*theta)*(np.tan(theta)**(-1))*(m1**2*np.sin(theta)**2 - 1))/((np.cos(2*theta) + gamma)*m1**2 + 2)**2 - (2*((np.tan(theta)**(-1))**2 + 1)*(m1**2*np.sin(theta)**2 - 1))/((np.cos(2*theta) + gamma)*m1**2 + 2) + (4*m1**2*np.cos(theta)*(np.tan(theta)**(-1))*np.sin(theta))/((np.cos(2*theta) + gamma)*m1**2 + 2)
         theta = theta - Err/dErrdTheta
         theta = abs(theta)
         if (abs(Err) < 1.0e-5):
@@ -392,6 +393,7 @@ def shock(M1,gam):
     gam (float): Specific Heat Ratio
 
     Returns:
+    M2 (float): Mach
     P2_P1 (float): Pressure Ratio
     T2_T1 (float): Temperature Ratio
     rho2_rho1 (float): Density Ratio
@@ -403,9 +405,11 @@ def shock(M1,gam):
         'P2_P1': (1+gam*M1**2)/(1+gam*M2**2),
         'T2_T1': (1+(gam-1)/2*M1**2)/(1+(gam-1)/2*M2**2),
     }
+    shock_ratios['M2'] = M2
     shock_ratios['rho2_rho1'] = shock_ratios['P2_P1']/shock_ratios['T2_T1']
     shock_ratios['P02_P01'] = shock_ratios[('P2_P1')]/shock_ratios[('T2_T1')]**(gam/(gam-1))
-    shock_ratios['V_Vstar'] = M2/M1*(shock_ratios['T2_T1)'])^((gam+1)/(2*(gam-1)));
+    shock_ratios['V_Vstar'] = M2/M1*(shock_ratios['T2_T1'])**((gam+1)/(2*(gam-1)))
+    shock_ratios['Astar2_Astar1'] = M2/M1*(shock_ratios['T2_T1'])**((gam+1)/(2*(gam-1)))
     return shock_ratios
     
 def StandardConditions(alt):
@@ -422,29 +426,25 @@ def StandardConditions(alt):
     P (float): Atmospheric Pressure (Pa)
     rho (float): Atmospheric Density (kg/m^3)
     '''
-    # MATLAB SCRIPT
-    '''
-    persistent std_data;
-    if isempty(std_data)
-        [std_data] = csvread('std.csv');
-        std_data(:,3) = log(std_data(:,3));
-        std_data(:,4) = log(std_data(:,4));
-    end
-    '''
+    # Get the current directory of the script
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    
+    # Construct the path to 'std.csv'
+    csv_path = os.path.join(current_dir, 'std.csv')
+
     if not hasattr(StandardConditions, "std_data"):
-        std_data = pd.read_csv('std.csv').to_numpy()
+        # Read the CSV file
+        std_data = pd.read_csv(csv_path).to_numpy()
         std_data[:, 2] = np.log(std_data[:, 2])
         std_data[:, 3] = np.log(std_data[:, 3])
         StandardConditions.std_data = std_data
-    
+        
     std_data = StandardConditions.std_data
-    data = np.empty((1, 3))
-    data[0, :] = np.interp(alt, std_data[:, 0], std_data[:, 1:], axis=0)
-    T = data[0, 0]
-    P = 1.0133e5 * np.exp(data[0, 1])
-    rho = np.exp(data[0, 2])
-
+    T = np.interp(alt, std_data[:, 0], std_data[:, 1])
+    P = 1.0133e5 * np.exp(np.interp(alt, std_data[:, 0], std_data[:, 2]))
+    rho = np.exp(np.interp(alt, std_data[:, 0], std_data[:, 3]))
     return T, P, rho
+
 
 
 

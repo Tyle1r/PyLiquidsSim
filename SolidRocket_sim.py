@@ -1,6 +1,6 @@
 # Adapted from Megan Albright's MATLAB Script
-from utils.gasDynamics_utils import StandardConditions,MforPratio,isentropic
-from MD4_utils import calcM, flightEvents, CvgDvg, calc_rocket, rocket
+import utils.gasDynamics_utils
+import MD4_utils.MD4_utils
 from scipy.integrate import solve_ivp
 import pandas as pd
 import numpy as np
@@ -29,7 +29,7 @@ Cd = 0.4
 Pc = 16e6      #[Pa] VARIABLE
 Tp = 600            #[seconds]
 g = 9.81            #[m/s**2]
-T_atm,P_atm,rho_atm = StandardConditions(0)          #[Pa]
+T_atm,P_atm,rho_atm = utils.gasDynamics_utils.StandardConditions(0)          #[Pa]
 r_earth = 6.378e6  #[m]
 r_tot = r_earth + alt #[m]
 vel = np.sqrt(g*r_tot)      #[m/s]
@@ -39,12 +39,12 @@ Ar = np.pi/4*(d**2)
 #Assume grain area constant 
 #Chosen Constants
 Pc_Patm = Pc/P_atm 
-mach = MforPratio(Pc_Patm,gamb)
-ratiosA = isentropic(mach,gamb)
-Ae_Astar = ratiosA.A_Astar
+mach = utils.gasDynamics_utils.MforPratio(Pc_Patm,gamb)
+ratiosA = utils.gasDynamics_utils.isentropic(mach,gamb)
+Ae_Astar = ratiosA['A_Astar']
 # grain and throat area comes form Pc
-ratiosforT = isentropic(1,gamb)
-Tstar = Tf/ratiosforT.T0_T             #[K]
+ratiosforT = utils.gasDynamics_utils.isentropic(1,gamb)
+Tstar = Tf/ratiosforT['T0_T']             #[K]
 cstar = np.sqrt(gamb*Rb*Tstar)            #[m/s]
 Vstar = cstar*1                        #[m/s]
 Astar_Agrain = (((gamb+1)/2)**(gamb/(gamb-1))*Rb*Tstar*rhof*a*Pc**(n-1))/Vstar
@@ -58,10 +58,10 @@ mass_nozz = vol_nozz*rho_nozz      #[kg]
 mr = mass_nozz+mass_payload            #[kg]
 
 ## Use calc rocket to find Isp, mdot then use that to find Mp (eqn for centripetal)
-thrust,mdot,rdot = calc_rocket(P_atm,Agrain,rhof,Tf,Rb,gamb,Astar,Aexit,a,n)
+thrust,mdot,rdot = MD4_utils.MD4_utils.calc_rocket(P_atm,Agrain,rhof,Tf,Rb,gamb,Astar,Aexit,a,n)
 Isp = thrust/(mdot*g)
 E = 1/2*vel**2 + g*alt
-mp_est = calcM(Isp,g,mr,mdot,E)
+mp_est = MD4_utils.MD4_utils.calcM(Isp,g,mr,mdot,E)
 mp = 1.635*mp_est
 m0 = mp+mr
 timeforfuel = mp/mdot
@@ -72,10 +72,15 @@ else:
     print('We off the ground')
 
 ## Calculations
-odeopt = {'rtol': 1.0e-12, 'atol': 1.0e-12, 'events': flightEvents}
+    '''
+odeopt = {'rtol': 1.0e-12, 'atol': 1.0e-12, 'events': MD4_utils.MD4_utils.flightEvents}
+'''
 y0 = [0, 0, mp]
-sol = solve_ivp(lambda t, y: rocket(t, y, Pc, Agrain, rhof, Tf, Rb, gamb, Astar, Aexit, a, n, mr, g, vel, Cd, Ar), 
-                [0, Tp], y0, method='RK45', **odeopt)
+
+sol = solve_ivp(
+    lambda t, y: MD4_utils.MD4_utils.rocket(t, y, Pc, Agrain, rhof, Tf, Rb, gamb, Astar, Aexit, a, n, mr, g, vel, Cd, Ar), 
+    [0, Tp], y0, method='RK45', rtol=1.0e-12, atol=1.0e-12, events=lambda t, y: MD4_utils.MD4_utils.flightEvents(t, y, alt)
+)
 t = sol.t
 y = sol.y
 # Plot 
